@@ -318,6 +318,11 @@ const CompletedOfferCard = ({
   onClaimCredits?: (transactionId: string) => void,
   isClaimingCredits?: boolean
 }) => {
+  // Only show claim button if:
+  // 1. It's in the "By You" section (not For You)
+  // 2. The offer hasn't been claimed yet
+  // 3. There is a claim handler function
+  // 4. There is a transaction ID to claim
   const showClaimButton = !isForYou && !offer.claimed && onClaimCredits && offer.transaction_id;
 
   return (
