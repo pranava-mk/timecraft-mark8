@@ -91,9 +91,9 @@ const PendingOffers = () => {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="backdrop-blur-lg bg-white/10 border border-white/20 rounded-xl">
         <CardHeader>
-          <CardTitle>My Offers & Applications</CardTitle>
+          <CardTitle className="text-navy">My Applications</CardTitle>
         </CardHeader>
         <CardContent>
           <div>Loading...</div>
@@ -102,64 +102,39 @@ const PendingOffers = () => {
     )
   }
 
-  if (!pendingOffers || pendingOffers.length === 0) {
+  // Only get applied offers
+  const appliedOffers = pendingOffers ? pendingOffers.filter(offer => offer.isApplied) : []
+
+  if (!appliedOffers || appliedOffers.length === 0) {
     return (
-      <Card>
+      <Card className="backdrop-blur-lg bg-white/10 border border-white/20 rounded-xl">
         <CardHeader>
-          <CardTitle>My Offers & Applications</CardTitle>
+          <CardTitle className="text-navy">My Applications</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-center text-muted-foreground">
-            No pending offers or applications found
+            No pending applications found
           </p>
         </CardContent>
       </Card>
     )
   }
 
-  console.log('Pending offers to render:', pendingOffers.length)
-  
-  // Group offers by type (my offers vs applied offers)
-  const myOffers = pendingOffers.filter(offer => !offer.isApplied)
-  const appliedOffers = pendingOffers.filter(offer => offer.isApplied)
-  
-  console.log('My offers count:', myOffers.length)
   console.log('Applied offers count:', appliedOffers.length)
 
   return (
-    <Card className="gradient-border card-hover">
+    <Card className="backdrop-blur-lg bg-white/10 border border-white/20 rounded-xl">
       <CardHeader>
-        <CardTitle className="text-navy">My Offers & Applications</CardTitle>
+        <CardTitle className="text-navy">My Applications</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
-          {myOffers.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold mb-3">My Pending Offers</h3>
-              <div className="space-y-4">
-                {myOffers.map((offer) => (
-                  <OfferCard 
-                    key={offer.id} 
-                    offer={offer}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {appliedOffers.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold mb-3">My Applications</h3>
-              <div className="space-y-4">
-                {appliedOffers.map((offer) => (
-                  <OfferCard 
-                    key={offer.id}
-                    offer={offer}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="space-y-4">
+          {appliedOffers.map((offer) => (
+            <OfferCard 
+              key={offer.id}
+              offer={offer}
+            />
+          ))}
         </div>
       </CardContent>
     </Card>

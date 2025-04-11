@@ -124,7 +124,7 @@ const QuickStats = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      <Card className="gradient-border card-hover">
+      <Card className="bg-gradient-to-br from-teal/5 to-mint/5 backdrop-blur-sm border border-white/20 rounded-xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-navy">Time Balance</CardTitle>
           <Clock className="h-4 w-4 text-teal" />
@@ -143,7 +143,7 @@ const QuickStats = () => {
         </CardContent>
       </Card>
       
-      <Card className="gradient-border card-hover">
+      <Card className="bg-gradient-to-br from-navy/5 to-teal/5 backdrop-blur-sm border border-white/20 rounded-xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-navy">Active Requests</CardTitle>
           <List className="h-4 w-4 text-teal" />
@@ -159,7 +159,7 @@ const QuickStats = () => {
         </CardContent>
       </Card>
       
-      <Card className="gradient-border card-hover">
+      <Card className="bg-gradient-to-br from-mint/5 to-navy/5 backdrop-blur-sm border border-white/20 rounded-xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-navy">Hours Exchanged</CardTitle>
           <ChartBar className="h-4 w-4 text-teal" />

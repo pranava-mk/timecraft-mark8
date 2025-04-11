@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client"
 import { useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Lock } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 const StatsCards = () => {
   const queryClient = useQueryClient()
@@ -130,24 +132,31 @@ const StatsCards = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {statsData.map((stat) => (
-        <Card key={stat.title} className="gradient-border card-hover">
-          <CardHeader className="pb-2">
+        <Card key={stat.title} className="relative overflow-hidden bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 rounded-xl">
+          <div className="absolute inset-0 backdrop-blur-sm bg-white/5 z-10"></div>
+          <CardHeader className="pb-2 relative z-20">
             <CardTitle className="text-sm font-medium text-navy">
               {stat.title}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-20 mb-2" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold text-navy">{stat.value}</div>
-                <p className="text-xs text-teal mt-1">
+          <CardContent className="relative z-20">
+            <div className="flex items-center justify-between">
+              <div className="opacity-30 blur-sm">
+                <div className="text-2xl font-bold text-navy">
+                  {isLoading ? <Skeleton className="h-8 w-20 mb-2" /> : stat.value}
+                </div>
+                <p className="text-xs text-teal mt-1 opacity-50">
                   {stat.description}
                 </p>
-              </>
-            )}
+              </div>
+              <Lock className="h-5 w-5 text-navy/50" />
+            </div>
           </CardContent>
+          <div className="absolute bottom-4 right-4 z-20">
+            <Button variant="outline" size="sm" className="text-xs bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20">
+              Upgrade
+            </Button>
+          </div>
         </Card>
       ))}
     </div>
