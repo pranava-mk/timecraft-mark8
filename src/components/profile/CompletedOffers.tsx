@@ -8,7 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, BadgeCheck, User, Users } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { useTimeBalance } from "@/hooks/useTimeBalance"
 
 interface CompletedOffersProps {
   userId: string | null
@@ -35,7 +34,6 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
   const [activeTab, setActiveTab] = useState<'for-you' | 'by-you'>('for-you')
   const { toast } = useToast()
   const queryClient = useQueryClient()
-  const { balance } = useTimeBalance(userId)
   
   // Add mutation for claiming credits
   const claimCreditsMutation = useMutation({
