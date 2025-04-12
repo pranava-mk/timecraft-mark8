@@ -145,18 +145,22 @@ const Profile = () => {
     enabled: !!userId
   })
 
-  const calculateTimeBalance = () => {
-    const INITIAL_CREDITS = 30;
-    
-    if (userOffersLoading || !userOffers) {
-      return INITIAL_CREDITS;
-    }
-    
-    const usedCredits = userOffers.reduce((sum, offer) => 
-      sum + (offer.time_credits || 0), 0);
-    
-    return INITIAL_CREDITS - usedCredits;
-  }
+  const { data: timeBalance, isLoading: timeBalanceLoading } = useQuery({
+    queryKey: ['time-balance', userId],
+    queryFn: async () => {
+      if (!userId) return null
+      
+      const { data, error } = await supabase
+        .from('time_balances')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle()
+        
+      if (error) throw error
+      return data?.balance || 30 // Default to 30 if not found
+    },
+    enabled: !!userId
+  })
 
   const handleLogout = async () => {
     try {
@@ -204,11 +208,11 @@ const Profile = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl md:text-4xl font-bold">Profile</h1>
         <div className="flex items-center gap-4">
-          {userOffersLoading ? (
+          {timeBalanceLoading ? (
             <Skeleton className="h-6 w-24" />
           ) : (
             <div className="text-sm font-medium">
-              <span className="text-teal">{calculateTimeBalance()}</span> credits available
+              <span className="text-teal">{timeBalance}</span> credits available
             </div>
           )}
           <Button variant="outline" onClick={handleLogout}>
@@ -280,7 +284,7 @@ const Profile = () => {
               <Button 
                 size="sm" 
                 onClick={() => navigate('/offer')}
-                disabled={userOffersLoading || calculateTimeBalance() <= 0}
+                disabled={userOffersLoading || !timeBalance || timeBalance <= 0}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 New Request

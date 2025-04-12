@@ -1,12 +1,11 @@
 
 import { useState } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, BadgeCheck, User, Users } from "lucide-react"
+import { CheckCircle2, BadgeCheck } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 
 interface CompletedOffersProps {
@@ -23,15 +22,14 @@ interface CompletedOffer {
   time_credits: number
   created_at: string
   completed_at: string
-  provider_username?: string
-  requester_username?: string
+  username?: string
   claimed?: boolean
   hours?: number
   transaction_id?: string
+  isOwner?: boolean 
 }
 
 const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => {
-  const [activeTab, setActiveTab] = useState<'for-you' | 'by-you'>('for-you')
   const { toast } = useToast()
   const queryClient = useQueryClient()
   
@@ -61,8 +59,6 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
       })
       // Invalidate relevant queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['completed-offers'] })
-      queryClient.invalidateQueries({ queryKey: ['completed-offers', userId, 'by-you'] })
-      queryClient.invalidateQueries({ queryKey: ['completed-offers', userId, 'for-you'] })
       queryClient.invalidateQueries({ queryKey: ['time-balance'] })
       queryClient.invalidateQueries({ queryKey: ['time-balance', userId] })
       queryClient.invalidateQueries({ queryKey: ['user-stats'] })
@@ -77,15 +73,15 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
     }
   })
   
-  // Fetch offers completed BY the user (user was the service provider)
-  const { data: completedByYou, isLoading: byYouLoading } = useQuery({
-    queryKey: ['completed-offers', userId, 'by-you'],
+  // Fetch all completed offers (both by you and for you)
+  const { data: completedOffers, isLoading } = useQuery({
+    queryKey: ['completed-offers', userId],
     queryFn: async () => {
       if (!userId) return []
       
-      console.log("Fetching services completed BY you (provider):", userId)
+      console.log("Fetching all completed services for user:", userId)
       
-      // Get transactions where the user was the provider
+      // Get transactions where the user was involved (either as provider or requester)
       const { data, error } = await supabase
         .from('transactions')
         .select(`
@@ -95,17 +91,18 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
           created_at,
           offer_id,
           user_id,
+          provider_id,
           claimed
         `)
-        .eq('provider_id', userId)
+        .or(`provider_id.eq.${userId},user_id.eq.${userId}`)
         .order('created_at', { ascending: false })
       
       if (error) {
-        console.error('Error fetching completed offers by you:', error)
+        console.error('Error fetching completed offers:', error)
         throw error
       }
 
-      console.log("Found transactions completed by you:", data?.length || 0)
+      console.log("Found transactions:", data?.length || 0)
 
       // For each transaction, get the offer details
       const completedOffers = []
@@ -114,7 +111,7 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
         // Get offer details
         const { data: offerData, error: offerError } = await supabase
           .from('offers')
-          .select('title, description, service_type, time_credits')
+          .select('title, description, service_type, time_credits, profile_id')
           .eq('id', transaction.offer_id)
           .maybeSingle()
           
@@ -123,15 +120,20 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
           continue
         }
         
-        // Get requester username
+        // Determine if the current user is the offer owner (requester)
+        const isOwner = offerData?.profile_id === userId;
+        
+        // Get username of the other party (provider if user is requester, requester if user is provider)
+        const otherUserId = isOwner ? transaction.provider_id : transaction.user_id;
+        
         const { data: userData, error: userError } = await supabase
           .from('profiles')
           .select('username')
-          .eq('id', transaction.user_id)
+          .eq('id', otherUserId)
           .maybeSingle()
           
         if (userError) {
-          console.warn(`Error fetching user ${transaction.user_id}:`, userError)
+          console.warn(`Error fetching user ${otherUserId}:`, userError)
         }
 
         completedOffers.push({
@@ -144,91 +146,16 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
           hours: transaction.hours,
           created_at: transaction.created_at,
           completed_at: transaction.created_at, // Using created_at as completed_at
-          requester_username: userData?.username || 'Unknown User',
-          claimed: transaction.claimed
+          username: userData?.username || 'Unknown User',
+          claimed: transaction.claimed,
+          isOwner: isOwner // Flag to determine if current user created the offer
         })
       }
 
-      console.log("Processed completed offers by you:", completedOffers.length)
+      console.log("Processed completed offers:", completedOffers.length)
       return completedOffers
     },
-    enabled: !!userId && activeTab === 'by-you'
-  })
-  
-  // Fetch offers completed FOR the user (user made the request)
-  const { data: completedForYou, isLoading: forYouLoading } = useQuery({
-    queryKey: ['completed-offers', userId, 'for-you'],
-    queryFn: async () => {
-      if (!userId) return []
-      
-      console.log("Fetching services completed FOR you (requester):", userId)
-      
-      // Get transactions where user requested the service
-      const { data, error } = await supabase
-        .from('transactions')
-        .select(`
-          id,
-          service,
-          hours,
-          created_at,
-          provider_id,
-          offer_id
-        `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-      
-      if (error) {
-        console.error('Error fetching completed offers for you:', error)
-        throw error
-      }
-
-      console.log("Found transactions completed for you:", data?.length || 0)
-
-      // For each transaction, get the offer details
-      const completedOffers = []
-      
-      for (const transaction of data || []) {
-        // Get offer details
-        const { data: offerData, error: offerError } = await supabase
-          .from('offers')
-          .select('title, description, service_type, time_credits')
-          .eq('id', transaction.offer_id)
-          .maybeSingle()
-          
-        if (offerError) {
-          console.warn(`Error fetching offer ${transaction.offer_id}:`, offerError)
-          continue
-        }
-        
-        // Get provider username
-        const { data: providerData, error: providerError } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', transaction.provider_id)
-          .maybeSingle()
-          
-        if (providerError) {
-          console.warn(`Error fetching provider ${transaction.provider_id}:`, providerError)
-        }
-
-        completedOffers.push({
-          id: transaction.offer_id,
-          transaction_id: transaction.id,
-          title: offerData?.title || 'Unknown Title',
-          description: offerData?.description || 'No description available',
-          service_type: offerData?.service_type || transaction.service,
-          time_credits: offerData?.time_credits || transaction.hours || 0,
-          hours: transaction.hours,
-          created_at: transaction.created_at,
-          completed_at: transaction.created_at,
-          provider_username: providerData?.username || 'Unknown Provider'
-        })
-      }
-
-      console.log("Processed completed offers for you:", completedOffers.length)
-      return completedOffers
-    },
-    enabled: !!userId && activeTab === 'for-you'
+    enabled: !!userId
   })
 
   const handleClaimCredits = async (transactionId: string) => {
@@ -241,67 +168,26 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
   }
 
   return (
-    <div>
-      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'by-you' | 'for-you')}>
-        <TabsList className="grid w-full grid-cols-2 mb-4">
-          <TabsTrigger value="for-you" className="flex items-center">
-            <User className="h-4 w-4 mr-2" />
-            FOR YOU
-          </TabsTrigger>
-          <TabsTrigger value="by-you" className="flex items-center">
-            <Users className="h-4 w-4 mr-2" />
-            BY YOU
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="for-you">
-          <div className="space-y-4">
-            {forYouLoading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-36 w-full" />
-                <Skeleton className="h-36 w-full" />
-              </div>
-            ) : completedForYou?.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                No services have been completed for you yet
-              </p>
-            ) : (
-              completedForYou?.map((offer) => (
-                <CompletedOfferCard
-                  key={`for-you-${offer.transaction_id}`}
-                  offer={offer}
-                  isForYou={true}
-                />
-              ))
-            )}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="by-you">
-          <div className="space-y-4">
-            {byYouLoading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-36 w-full" />
-                <Skeleton className="h-36 w-full" />
-              </div>
-            ) : completedByYou?.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                You haven't completed any services yet
-              </p>
-            ) : (
-              completedByYou?.map((offer) => (
-                <CompletedOfferCard
-                  key={`by-you-${offer.transaction_id}`}
-                  offer={offer}
-                  isForYou={false}
-                  onClaimCredits={handleClaimCredits}
-                  isClaimingCredits={claimCreditsMutation.isPending}
-                />
-              ))
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
+    <div className="space-y-4">
+      {isLoading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-36 w-full" />
+          <Skeleton className="h-36 w-full" />
+        </div>
+      ) : completedOffers?.length === 0 ? (
+        <p className="text-center text-muted-foreground py-8">
+          No completed exchanges found
+        </p>
+      ) : (
+        completedOffers?.map((offer) => (
+          <CompletedOfferCard
+            key={`offer-${offer.transaction_id}`}
+            offer={offer}
+            onClaimCredits={handleClaimCredits}
+            isClaimingCredits={claimCreditsMutation.isPending}
+          />
+        ))
+      )}
     </div>
   )
 }
@@ -309,21 +195,19 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
 // Component for displaying a completed offer card
 const CompletedOfferCard = ({ 
   offer, 
-  isForYou,
   onClaimCredits,
   isClaimingCredits
 }: { 
   offer: CompletedOffer, 
-  isForYou: boolean,
   onClaimCredits?: (transactionId: string) => void,
   isClaimingCredits?: boolean
 }) => {
   // Only show claim button if:
-  // 1. It's in the "By You" section (not For You)
+  // 1. The offer wasn't created by the current user (not the owner)
   // 2. The offer hasn't been claimed yet
   // 3. There is a claim handler function
   // 4. There is a transaction ID to claim
-  const showClaimButton = !isForYou && !offer.claimed && onClaimCredits && offer.transaction_id;
+  const showClaimButton = !offer.isOwner && !offer.claimed && onClaimCredits && offer.transaction_id;
 
   return (
     <Card className="gradient-border">
@@ -353,10 +237,10 @@ const CompletedOfferCard = ({
         
         <div className="mt-4 pt-3 border-t border-navy/10 text-sm flex justify-between items-center">
           <div>
-            {isForYou ? (
-              <p>Completed by: <span className="font-medium">{offer.provider_username}</span></p>
+            {offer.isOwner ? (
+              <p>Completed by: <span className="font-medium">{offer.username}</span></p>
             ) : (
-              <p>Requested by: <span className="font-medium">{offer.requester_username}</span></p>
+              <p>Requested by: <span className="font-medium">{offer.username}</span></p>
             )}
           </div>
           
@@ -372,7 +256,7 @@ const CompletedOfferCard = ({
             </Button>
           )}
           
-          {!isForYou && offer.claimed && (
+          {!offer.isOwner && offer.claimed && (
             <div className="flex items-center text-green-700 font-medium text-sm">
               <BadgeCheck className="h-4 w-4 mr-1" />
               Credits Claimed
