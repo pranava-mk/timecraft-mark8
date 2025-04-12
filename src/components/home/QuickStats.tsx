@@ -96,13 +96,19 @@ const QuickStats = () => {
     queryFn: async () => {
       if (!userId) return null
       
+      console.log("Fetching time balance for QuickStats:", userId)
       const { data, error } = await supabase
         .from('time_balances')
         .select('balance')
         .eq('user_id', userId)
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error("Error fetching time balance in QuickStats:", error)
+        throw error
+      }
+      
+      console.log("Time balance data in QuickStats:", data)
       return data?.balance || 0
     },
     enabled: !!userId // Only run query when userId is available
@@ -121,7 +127,9 @@ const QuickStats = () => {
               {timeBalanceLoading ? (
                 <Skeleton className="h-8 w-20" />
               ) : (
-                `${timeBalance} credits`
+                <span className={timeBalance < 0 ? "text-red-500" : "text-navy"}>
+                  {timeBalance} credits
+                </span>
               )}
             </div>
             <Badge variant="outline" className="bg-teal/10 text-teal">Available</Badge>

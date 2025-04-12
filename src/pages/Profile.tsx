@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -149,13 +150,19 @@ const Profile = () => {
     queryFn: async () => {
       if (!userId) return null
       
+      console.log("Fetching time balance for user:", userId)
       const { data, error } = await supabase
         .from('time_balances')
         .select('balance')
         .eq('user_id', userId)
         .single()
         
-      if (error) throw error
+      if (error) {
+        console.error("Error fetching time balance:", error)
+        throw error
+      }
+      
+      console.log("Time balance data:", data)
       return data?.balance || 0 // Return 0 if not found
     },
     enabled: !!userId
@@ -211,7 +218,9 @@ const Profile = () => {
             <Skeleton className="h-6 w-24" />
           ) : (
             <div className="text-sm font-medium">
-              <span className="text-teal">{timeBalance}</span> credits available
+              <span className={timeBalance < 0 ? "text-red-500" : "text-teal"}>
+                {timeBalance} credits
+              </span> available
             </div>
           )}
           <Button variant="outline" onClick={handleLogout}>

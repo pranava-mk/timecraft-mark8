@@ -90,14 +90,19 @@ const StatsCards = () => {
     queryFn: async () => {
       if (!userId) return null
       
+      console.log("Fetching time balance for StatsCards:", userId)
       const { data, error } = await supabase
         .from('time_balances')
         .select('balance')
         .eq('user_id', userId)
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error("Error fetching time balance in StatsCards:", error)
+        throw error
+      }
       
+      console.log("Time balance data in StatsCards:", data)
       return data?.balance || 0
     },
     enabled: !!userId // Only run query when userId is available
