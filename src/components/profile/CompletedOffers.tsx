@@ -106,8 +106,15 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
 
       // For each transaction, get the offer details
       const completedOffers = []
+      const processedOfferIds = new Set() // Track processed offer IDs to avoid duplicates
       
       for (const transaction of data || []) {
+        // Skip if we've already processed this offer
+        if (processedOfferIds.has(transaction.offer_id)) {
+          console.log('Skipping duplicate offer:', transaction.offer_id)
+          continue
+        }
+        
         // Get offer details
         const { data: offerData, error: offerError } = await supabase
           .from('offers')
@@ -125,6 +132,9 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
           console.log('Skipping offer with missing data:', transaction.offer_id)
           continue
         }
+        
+        // Mark this offer as processed
+        processedOfferIds.add(transaction.offer_id)
         
         // Determine if the current user is the offer owner (requester)
         const isOwner = offerData?.profile_id === userId;
