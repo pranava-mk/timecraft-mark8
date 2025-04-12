@@ -5,8 +5,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Lock } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { TrendingUp, Users, Award, BarChart2 } from "lucide-react"
 
 const StatsCards = () => {
   const queryClient = useQueryClient()
@@ -99,7 +98,7 @@ const StatsCards = () => {
 
       if (error) throw error
       
-      return data
+      return data?.balance || 0
     },
     enabled: !!userId // Only run query when userId is available
   })
@@ -110,22 +109,26 @@ const StatsCards = () => {
     {
       title: "Total Exchanges",
       value: stats?.total_exchanges?.toString() || "0",
-      description: "Time exchanges completed"
+      description: "Time exchanges completed",
+      icon: <TrendingUp className="h-5 w-5 text-teal" />
     },
     {
       title: "Average Rating",
       value: stats?.average_rating?.toFixed(1).toString() || "0.0",
-      description: "Out of 5 stars"
+      description: "Out of 5 stars",
+      icon: <Award className="h-5 w-5 text-teal" />
     },
     {
       title: "Most Requested",
       value: stats?.most_offered_service || "N/A",
-      description: "Your top service"
+      description: "Your top service",
+      icon: <BarChart2 className="h-5 w-5 text-teal" />
     },
     {
       title: "Community Rank",
       value: `#${stats?.community_rank || "0"}`,
-      description: "Among active users"
+      description: "Among active users",
+      icon: <Users className="h-5 w-5 text-teal" />
     }
   ]
 
@@ -133,7 +136,6 @@ const StatsCards = () => {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {statsData.map((stat) => (
         <Card key={stat.title} className="relative overflow-hidden bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 rounded-xl">
-          <div className="absolute inset-0 backdrop-blur-sm bg-white/5 z-10"></div>
           <CardHeader className="pb-2 relative z-20">
             <CardTitle className="text-sm font-medium text-navy">
               {stat.title}
@@ -141,22 +143,17 @@ const StatsCards = () => {
           </CardHeader>
           <CardContent className="relative z-20">
             <div className="flex items-center justify-between">
-              <div className="opacity-30 blur-sm">
+              <div>
                 <div className="text-2xl font-bold text-navy">
                   {isLoading ? <Skeleton className="h-8 w-20 mb-2" /> : stat.value}
                 </div>
-                <p className="text-xs text-teal mt-1 opacity-50">
+                <p className="text-xs text-teal mt-1 opacity-75">
                   {stat.description}
                 </p>
               </div>
-              <Lock className="h-5 w-5 text-navy/50" />
+              {stat.icon}
             </div>
           </CardContent>
-          <div className="absolute bottom-4 right-4 z-20">
-            <Button variant="outline" size="sm" className="text-xs bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20">
-              Upgrade
-            </Button>
-          </div>
         </Card>
       ))}
     </div>

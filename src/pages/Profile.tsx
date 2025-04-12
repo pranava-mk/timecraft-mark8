@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -152,12 +151,12 @@ const Profile = () => {
       
       const { data, error } = await supabase
         .from('time_balances')
-        .select('*')
+        .select('balance')
         .eq('user_id', userId)
-        .maybeSingle()
+        .single()
         
       if (error) throw error
-      return data?.balance || 30 // Default to 30 if not found
+      return data?.balance || 0 // Return 0 if not found
     },
     enabled: !!userId
   })

@@ -120,6 +120,12 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
           continue
         }
         
+        // Skip offers with missing essential data
+        if (!offerData?.title || !offerData?.description) {
+          console.log('Skipping offer with missing data:', transaction.offer_id)
+          continue
+        }
+        
         // Determine if the current user is the offer owner (requester)
         const isOwner = offerData?.profile_id === userId;
         
@@ -136,17 +142,23 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
           console.warn(`Error fetching user ${otherUserId}:`, userError)
         }
 
+        // Skip offers where we couldn't find the other user's username
+        if (!userData?.username) {
+          console.log('Skipping offer with missing username data:', transaction.offer_id)
+          continue
+        }
+
         completedOffers.push({
           id: transaction.offer_id,
           transaction_id: transaction.id,
-          title: offerData?.title || 'Unknown Title',
-          description: offerData?.description || 'No description available',
+          title: offerData?.title,
+          description: offerData?.description,
           service_type: offerData?.service_type || transaction.service,
           time_credits: offerData?.time_credits || transaction.hours || 0,
           hours: transaction.hours,
           created_at: transaction.created_at,
           completed_at: transaction.created_at, // Using created_at as completed_at
-          username: userData?.username || 'Unknown User',
+          username: userData?.username,
           claimed: transaction.claimed,
           isOwner: isOwner // Flag to determine if current user created the offer
         })
