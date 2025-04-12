@@ -7,7 +7,6 @@ import { useQueryClient } from "@tanstack/react-query"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useTimeBalance } from "@/hooks/useTimeBalance"
 
 const StatsCards = () => {
   const queryClient = useQueryClient()
@@ -24,9 +23,6 @@ const StatsCards = () => {
     
     fetchUserId()
   }, [])
-
-  // Use shared hook for time balance
-  const { timeBalance } = useTimeBalance(userId)
 
   // Set up the real-time subscription with proper user ID
   useEffect(() => {
@@ -89,7 +85,26 @@ const StatsCards = () => {
     enabled: !!userId // Only run query when userId is available
   })
 
-  const isLoading = statsLoading
+  // Get time balance from the time_balances table
+  const { data: timeBalance, isLoading: timeBalanceLoading } = useQuery({
+    queryKey: ['time-balance', userId],
+    queryFn: async () => {
+      if (!userId) return null
+      
+      const { data, error } = await supabase
+        .from('time_balances')
+        .select('balance')
+        .eq('user_id', userId)
+        .single()
+
+      if (error) throw error
+      
+      return data
+    },
+    enabled: !!userId // Only run query when userId is available
+  })
+
+  const isLoading = statsLoading || timeBalanceLoading
 
   const statsData = [
     {

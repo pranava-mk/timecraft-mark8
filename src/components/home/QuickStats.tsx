@@ -7,7 +7,6 @@ import { useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useTimeBalance } from "@/hooks/useTimeBalance"
 
 const QuickStats = () => {
   const queryClient = useQueryClient()
@@ -24,9 +23,6 @@ const QuickStats = () => {
     
     fetchUserId()
   }, [])
-
-  // Use shared hook for time balance
-  const { timeBalance, isLoading: timeBalanceLoading } = useTimeBalance(userId)
 
   // Set up real-time listeners only when we have a user ID
   useEffect(() => {
@@ -94,6 +90,38 @@ const QuickStats = () => {
     enabled: !!userId // Only run query when userId is available
   })
 
+  // Get user's offers to calculate credits used
+  const { data: userOffers, isLoading: userOffersLoading } = useQuery({
+    queryKey: ['user-offers', userId],
+    queryFn: async () => {
+      if (!userId) return null
+      
+      const { data, error } = await supabase
+        .from('offers')
+        .select('time_credits')
+        .eq('profile_id', userId)
+      
+      if (error) throw error
+      return data
+    },
+    enabled: !!userId
+  })
+
+  // Calculate available time balance based on offers
+  const calculateTimeBalance = () => {
+    const INITIAL_CREDITS = 30;
+    
+    if (userOffersLoading || !userOffers) {
+      return INITIAL_CREDITS;
+    }
+    
+    // Sum up all credits used in offers
+    const usedCredits = userOffers.reduce((sum, offer) => 
+      sum + (offer.time_credits || 0), 0);
+    
+    return INITIAL_CREDITS - usedCredits;
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <Card className="bg-gradient-to-br from-teal/5 to-mint/5 backdrop-blur-sm border border-white/20 rounded-xl">
@@ -104,10 +132,10 @@ const QuickStats = () => {
         <CardContent>
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold text-navy">
-              {timeBalanceLoading ? (
+              {userOffersLoading ? (
                 <Skeleton className="h-8 w-20" />
               ) : (
-                `${timeBalance} credits`
+                `${calculateTimeBalance()} credits`
               )}
             </div>
             <Badge variant="outline" className="bg-teal/10 text-teal">Available</Badge>
