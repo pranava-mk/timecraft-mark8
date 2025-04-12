@@ -32,6 +32,7 @@ interface CompletedOffer {
 const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => {
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const [claimedTransactions, setClaimedTransactions] = useState<string[]>([])
   
   // Add mutation for claiming credits
   const claimCreditsMutation = useMutation({
@@ -51,12 +52,16 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
       console.log("Successfully claimed credits, transaction updated:", data)
       return data
     },
-    onSuccess: () => {
+    onSuccess: (data, transactionId) => {
       toast({
         title: "Credits claimed successfully",
         description: "The time credits have been added to your balance",
         variant: "default",
       })
+      
+      // Update local state to immediately reflect claimed status
+      setClaimedTransactions(prev => [...prev, transactionId])
+      
       // Invalidate relevant queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['completed-offers'] })
       queryClient.invalidateQueries({ queryKey: ['time-balance'] })
@@ -207,6 +212,7 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
             offer={offer}
             onClaimCredits={handleClaimCredits}
             isClaimingCredits={claimCreditsMutation.isPending}
+            isClaimedLocally={claimedTransactions.includes(offer.transaction_id || '')}
           />
         ))
       )}
@@ -218,18 +224,23 @@ const CompletedOffers = ({ userId, username, avatar }: CompletedOffersProps) => 
 const CompletedOfferCard = ({ 
   offer, 
   onClaimCredits,
-  isClaimingCredits
+  isClaimingCredits,
+  isClaimedLocally
 }: { 
   offer: CompletedOffer, 
   onClaimCredits?: (transactionId: string) => void,
-  isClaimingCredits?: boolean
+  isClaimingCredits?: boolean,
+  isClaimedLocally?: boolean
 }) => {
+  // Determine if the offer is claimed either in database or locally
+  const isClaimed = offer.claimed || isClaimedLocally;
+  
   // Only show claim button if:
   // 1. The offer wasn't created by the current user (not the owner)
-  // 2. The offer hasn't been claimed yet
+  // 2. The offer hasn't been claimed yet (either in database or locally)
   // 3. There is a claim handler function
   // 4. There is a transaction ID to claim
-  const showClaimButton = !offer.isOwner && !offer.claimed && onClaimCredits && offer.transaction_id;
+  const showClaimButton = !offer.isOwner && !isClaimed && onClaimCredits && offer.transaction_id;
 
   return (
     <Card className="gradient-border">
@@ -241,7 +252,7 @@ const CompletedOfferCard = ({
           </div>
           <div className="flex items-center text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs font-medium">
             <CheckCircle2 className="h-3 w-3 mr-1" />
-            {offer.claimed ? "Claimed" : "Completed"}
+            {isClaimed ? "Claimed" : "Completed"}
           </div>
         </div>
         
@@ -278,7 +289,7 @@ const CompletedOfferCard = ({
             </Button>
           )}
           
-          {!offer.isOwner && offer.claimed && (
+          {!offer.isOwner && isClaimed && (
             <div className="flex items-center text-green-700 font-medium text-sm">
               <BadgeCheck className="h-4 w-4 mr-1" />
               Credits Claimed
