@@ -12,12 +12,16 @@ import { useEffect, useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import CompletedOffers from "@/components/profile/CompletedOffers"
+import { useTimeBalance } from "@/hooks/useTimeBalance"
 
 const Profile = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const [userId, setUserId] = useState<string | null>(null)
+  
+  // Use the shared hook for time balance
+  const { timeBalance, isLoading: timeBalanceLoading } = useTimeBalance(userId)
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -98,6 +102,7 @@ const Profile = () => {
         () => {
           console.log('Transactions update received on profile page')
           queryClient.invalidateQueries({ queryKey: ['completed-offers', userId] })
+          queryClient.invalidateQueries({ queryKey: ['time-balance', userId] })
         }
       )
       .subscribe()
@@ -141,23 +146,6 @@ const Profile = () => {
       if (error) throw error
       console.log('User offers in profile page:', data)
       return data
-    },
-    enabled: !!userId
-  })
-
-  const { data: timeBalance, isLoading: timeBalanceLoading } = useQuery({
-    queryKey: ['time-balance', userId],
-    queryFn: async () => {
-      if (!userId) return null
-      
-      const { data, error } = await supabase
-        .from('time_balances')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle()
-        
-      if (error) throw error
-      return data?.balance || 30 // Default to 30 if not found
     },
     enabled: !!userId
   })
