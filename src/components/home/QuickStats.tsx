@@ -116,12 +116,13 @@ const QuickStats = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      <Card className="bg-gradient-to-br from-teal/5 to-mint/5 backdrop-blur-sm border border-white/20 rounded-xl">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <Card className="bg-gradient-to-br from-teal/5 to-mint/5 backdrop-blur-sm border border-white/20 rounded-xl relative">
+        {/* <div className="absolute inset-0 backdrop-blur-md bg-white/80 rounded-xl" />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
           <CardTitle className="text-sm font-medium text-navy">Time Balance</CardTitle>
           <Clock className="h-4 w-4 text-teal" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative">
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold text-navy">
               {timeBalanceLoading ? (
@@ -132,41 +133,9 @@ const QuickStats = () => {
                 </span>
               )}
             </div>
-            <Badge variant="outline" className="bg-teal/10 text-teal">Available</Badge>
+            <Badge variant="outline" className="bg-teal/10 text-teal">Premium</Badge>
           </div>
-        </CardContent>
-      </Card>
-      
-      <Card className="bg-gradient-to-br from-navy/5 to-teal/5 backdrop-blur-sm border border-white/20 rounded-xl">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-navy">Active Requests</CardTitle>
-          <List className="h-4 w-4 text-teal" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-navy">
-            {statsLoading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              stats?.active_offers || 0
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card className="bg-gradient-to-br from-mint/5 to-navy/5 backdrop-blur-sm border border-white/20 rounded-xl">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-navy">Hours Exchanged</CardTitle>
-          <ChartBar className="h-4 w-4 text-teal" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-navy">
-            {statsLoading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              stats?.hours_exchanged || 0
-            )}
-          </div>
-        </CardContent>
+        </CardContent> */}
       </Card>
     </div>
   )

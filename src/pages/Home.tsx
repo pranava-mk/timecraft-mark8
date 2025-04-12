@@ -68,7 +68,12 @@ const Home = () => {
               Premium
             </span>
           </h2>
-          <StatsCards />
+          <div className="relative">
+            <div className="absolute inset-0 backdrop-blur-md bg-white/1 rounded-xl z-10"></div>
+            <div className="relative z-0 pointer-events-none">
+              <StatsCards />
+            </div>
+          </div>
         </div>
       </div>
     </div>

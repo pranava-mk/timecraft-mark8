@@ -218,9 +218,7 @@ const Profile = () => {
             <Skeleton className="h-6 w-24" />
           ) : (
             <div className="text-sm font-medium">
-              <span className={timeBalance < 0 ? "text-red-500" : "text-teal"}>
-                {timeBalance} credits
-              </span> available
+
             </div>
           )}
           <Button variant="outline" onClick={handleLogout}>
