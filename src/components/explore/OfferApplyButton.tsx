@@ -1,10 +1,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Check, Gift, Hourglass } from "lucide-react"
-import { useQueryClient } from "@tanstack/react-query"
-import { supabase } from "@/integrations/supabase/client"
-import { useToast } from "@/hooks/use-toast"
-import { useState } from "react"
+import { useClaimCredits } from "@/hooks/useClaimCredits"
 
 interface OfferApplyButtonProps {
   offerId: string
@@ -14,6 +11,7 @@ interface OfferApplyButtonProps {
   userApplication?: any
   onApply: (offerId: string) => void
   isApplying: boolean
+  timeCredits?: number
 }
 
 const OfferApplyButton = ({ 
@@ -23,44 +21,13 @@ const OfferApplyButton = ({
   applicationStatus, 
   userApplication, 
   onApply, 
-  isApplying 
+  isApplying,
+  timeCredits = 1
 }: OfferApplyButtonProps) => {
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
-  const [isClaiming, setIsClaiming] = useState(false)
-  const [isClaimed, setIsClaimed] = useState(false)
+  const { claimCredits, isClaiming, isClaimed } = useClaimCredits()
 
-  const handleClaim = async () => {
-    try {
-      setIsClaiming(true)
-      
-      const { error } = await supabase
-        .from('transactions')
-        .update({ claimed: true })
-        .eq('offer_id', offerId)
-
-      if (error) throw error
-
-      toast({
-        title: "Success",
-        description: "Credits have been claimed successfully!",
-      })
-
-      // Set local state to show claimed status
-      setIsClaimed(true)
-
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['pending-offers-and-applications'] })
-      queryClient.invalidateQueries({ queryKey: ['time-balance'] })
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to claim credits: " + error.message,
-      })
-    } finally {
-      setIsClaiming(false)
-    }
+  const handleClaim = () => {
+    claimCredits({ offerId, hours: timeCredits })
   }
   
   // Only show claim button for service providers (applicants) when the offer is completed
