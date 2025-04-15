@@ -29,6 +29,9 @@ export const useOfferSubscription = () => {
           queryClient.invalidateQueries({ queryKey: ['user-offers'] })
           queryClient.invalidateQueries({ queryKey: ['time-balance'] })
           queryClient.invalidateQueries({ queryKey: ['user-stats'] })
+          
+          // Force immediate refetch of time balance
+          queryClient.refetchQueries({ queryKey: ['time-balance'] })
         }
       )
       .subscribe()

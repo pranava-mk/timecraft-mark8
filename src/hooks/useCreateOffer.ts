@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/components/ui/use-toast'
+import { useQuery } from '@tanstack/react-query'
 
 interface OfferInput {
   title: string
@@ -17,29 +18,37 @@ export const useCreateOffer = () => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
 
+  // Get time balance directly from the database
+  const { data: timeBalance } = useQuery({
+    queryKey: ['time-balance'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return null
+      
+      const { data, error } = await supabase
+        .from('time_balances')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single()
+
+      if (error) {
+        console.error('Error fetching time balance:', error)
+        return 0
+      }
+      
+      return data?.balance || 0
+    }
+  })
+
   const createOffer = useMutation({
     mutationFn: async (offer: OfferInput) => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      // Get all user offers to calculate available credits
-      const { data: userOffers, error: offersError } = await supabase
-        .from('offers')
-        .select('time_credits')
-        .eq('profile_id', user.id)
-        
-      if (offersError) throw offersError
+      console.log(`Checking credit balance: Available ${timeBalance}, needs ${offer.timeCredits}`)
       
-      // Calculate current available credits
-      const INITIAL_CREDITS = 30
-      const usedCredits = userOffers.reduce((sum, userOffer) => 
-        sum + (userOffer.time_credits || 0), 0)
-      const availableCredits = INITIAL_CREDITS - usedCredits
-      
-      console.log(`Checking credit balance: Available ${availableCredits}, needs ${offer.timeCredits}`)
-      
-      if (availableCredits < offer.timeCredits) {
-        throw new Error(`Insufficient credits. You need ${offer.timeCredits} but only have ${availableCredits} available.`)
+      if ((timeBalance || 0) < offer.timeCredits) {
+        throw new Error(`Insufficient credits. You need ${offer.timeCredits} but only have ${timeBalance} available.`)
       }
 
       console.log('Creating offer with data:', {

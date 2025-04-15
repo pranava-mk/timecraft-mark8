@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -61,7 +62,8 @@ const Profile = () => {
         },
         () => {
           console.log('Time balance update received on profile page')
-          queryClient.invalidateQueries({ queryKey: ['time-balance', userId] })
+          queryClient.invalidateQueries({ queryKey: ['time-balance'] })
+          queryClient.refetchQueries({ queryKey: ['time-balance'] })
         }
       )
       .subscribe()
@@ -79,7 +81,7 @@ const Profile = () => {
         () => {
           console.log('Offers update received on profile page')
           queryClient.invalidateQueries({ queryKey: ['user-offers', userId] })
-          queryClient.invalidateQueries({ queryKey: ['time-balance', userId] })
+          queryClient.invalidateQueries({ queryKey: ['time-balance'] })
           queryClient.invalidateQueries({ queryKey: ['completed-offers', userId] })
         }
       )
@@ -97,6 +99,8 @@ const Profile = () => {
         () => {
           console.log('Transactions update received on profile page')
           queryClient.invalidateQueries({ queryKey: ['completed-offers', userId] })
+          queryClient.invalidateQueries({ queryKey: ['time-balance'] })
+          queryClient.refetchQueries({ queryKey: ['time-balance'] })
         }
       )
       .subscribe()
@@ -147,18 +151,27 @@ const Profile = () => {
   // Filter out completed offers for the My Requests tab
   const activeUserOffers = userOffers?.filter(offer => offer.status !== 'completed') || []
 
-  const calculateTimeBalance = () => {
-    const INITIAL_CREDITS = 30;
-    
-    if (userOffersLoading || !userOffers) {
-      return INITIAL_CREDITS;
-    }
-    
-    const usedCredits = userOffers.reduce((sum, offer) => 
-      sum + (offer.time_credits || 0), 0);
-    
-    return INITIAL_CREDITS - usedCredits;
-  }
+  // Get time balance directly from the database - single source of truth
+  const { data: timeBalance, isLoading: timeBalanceLoading } = useQuery({
+    queryKey: ['time-balance'],
+    queryFn: async () => {
+      if (!userId) return null
+      
+      const { data, error } = await supabase
+        .from('time_balances')
+        .select('balance')
+        .eq('user_id', userId)
+        .single()
+
+      if (error) {
+        console.error('Error fetching time balance:', error)
+        return 0
+      }
+      
+      return data?.balance || 0
+    },
+    enabled: !!userId
+  })
 
   const handleLogout = async () => {
     try {
@@ -206,11 +219,11 @@ const Profile = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl md:text-4xl font-bold">Profile</h1>
         <div className="flex items-center gap-4">
-          {userOffersLoading ? (
+          {timeBalanceLoading ? (
             <Skeleton className="h-6 w-24" />
           ) : (
             <div className="text-sm font-medium">
-              <span className="text-teal">{calculateTimeBalance()}</span> credits available
+              <span className="text-teal">{timeBalance}</span> credits available
             </div>
           )}
           <Button variant="outline" onClick={handleLogout}>
@@ -282,7 +295,7 @@ const Profile = () => {
               <Button 
                 size="sm" 
                 onClick={() => navigate('/offer')}
-                disabled={userOffersLoading || calculateTimeBalance() <= 0}
+                disabled={userOffersLoading || (timeBalance || 0) <= 0}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 New Request

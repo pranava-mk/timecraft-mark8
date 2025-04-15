@@ -76,8 +76,7 @@ const QuickStats = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'offers',
-          filter: `profile_id=eq.${userId}`
+          table: 'offers'
         },
         () => {
           console.log('Offers update received in QuickStats')
@@ -115,7 +114,7 @@ const QuickStats = () => {
 
   // Directly fetch time balance from the database
   const { data: timeBalanceData, isLoading: timeBalanceLoading } = useQuery({
-    queryKey: ['time-balance', userId],
+    queryKey: ['time-balance'],
     queryFn: async () => {
       if (!userId) return null
       

@@ -35,7 +35,9 @@ export function useCompletedOffers(userId: string | null) {
         (payload) => {
           console.log('Transaction update in CompletedOffers:', payload)
           queryClient.invalidateQueries({ queryKey: ['completed-offers'] })
+          queryClient.invalidateQueries({ queryKey: ['time-balance'] })
           queryClient.refetchQueries({ queryKey: ['completed-offers'] })
+          queryClient.refetchQueries({ queryKey: ['time-balance'] })
         }
       )
       .subscribe()
@@ -140,6 +142,9 @@ export function useCompletedOffers(userId: string | null) {
   // Function to mark an offer as claimed locally (optimistic UI update)
   const setOfferAsClaimed = (offerId: string) => {
     setLocalClaimed(prev => ({ ...prev, [offerId]: true }))
+    // Also invalidate the time-balance query to ensure it's up to date
+    queryClient.invalidateQueries({ queryKey: ['time-balance'] })
+    queryClient.refetchQueries({ queryKey: ['time-balance'] })
   }
 
   return {

@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
@@ -48,49 +49,51 @@ const Offer = () => {
   const [duration, setDuration] = useState("")
   const [timeCredits, setTimeCredits] = useState([1])
   const { toast } = useToast()
+  const [userId, setUserId] = useState<string | null>(null)
+  
+  // Get user ID
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const { data } = await supabase.auth.getUser()
+      if (data?.user?.id) {
+        setUserId(data.user.id)
+      }
+    }
+    
+    fetchUserId()
+  }, [])
 
-  const { data: userOffers, isLoading: userOffersLoading } = useQuery({
-    queryKey: ['user-offers'],
+  // Get time balance directly from the database - single source of truth
+  const { data: timeBalance, isLoading: timeBalanceLoading } = useQuery({
+    queryKey: ['time-balance'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error("No user found")
-
+      if (!userId) return null
+      
       const { data, error } = await supabase
-        .from('offers')
-        .select('time_credits')
-        .eq('profile_id', user.id)
+        .from('time_balances')
+        .select('balance')
+        .eq('user_id', userId)
+        .single()
 
       if (error) {
-        console.error('Error fetching user offers:', error)
-        throw error
+        console.error('Error fetching time balance:', error)
+        return 0
       }
       
-      return data
-    }
+      return data?.balance || 0
+    },
+    enabled: !!userId
   })
-
-  const calculateTimeBalance = () => {
-    const INITIAL_CREDITS = 30;
-    
-    if (userOffersLoading || !userOffers) {
-      return INITIAL_CREDITS;
-    }
-    
-    const usedCredits = userOffers.reduce((sum, offer) => 
-      sum + (offer.time_credits || 0), 0);
-    
-    return INITIAL_CREDITS - usedCredits;
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     const finalServiceType = serviceType === "Others" ? otherServiceType : serviceType
     
-    if (calculateTimeBalance() < timeCredits[0]) {
+    if ((timeBalance || 0) < timeCredits[0]) {
       toast({
         title: "Insufficient Credits",
-        description: `You only have ${calculateTimeBalance()} credits, but this request requires ${timeCredits[0]}.`,
+        description: `You only have ${timeBalance} credits, but this request requires ${timeCredits[0]}.`,
         variant: "destructive"
       })
       return
@@ -109,9 +112,9 @@ const Offer = () => {
     navigate('/profile')
   }
 
-  const hasNoCredits = calculateTimeBalance() <= 0
+  const hasNoCredits = (timeBalance || 0) <= 0
 
-  const maxCredits = Math.min(5, calculateTimeBalance())
+  const maxCredits = Math.min(5, timeBalance || 0)
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
@@ -124,7 +127,7 @@ const Offer = () => {
             <div className="flex items-center space-x-2">
               <CreditCard className="h-4 w-4 text-teal" />
               <span className="text-sm font-medium">
-                {userOffersLoading ? "Loading..." : `Available: ${calculateTimeBalance()} credits`}
+                {timeBalanceLoading ? "Loading..." : `Available: ${timeBalance} credits`}
               </span>
             </div>
           </div>
@@ -268,7 +271,7 @@ const Offer = () => {
               </Button>
               <Button 
                 type="submit" 
-                disabled={isCreating || timeCredits[0] > calculateTimeBalance() || hasNoCredits}
+                disabled={isCreating || timeCredits[0] > (timeBalance || 0) || hasNoCredits}
                 className="bg-teal hover:bg-teal/90 text-cream"
               >
                 {isCreating ? "Creating..." : "Create Request"}

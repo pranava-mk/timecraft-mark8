@@ -45,7 +45,7 @@ const OfferApplyButton = ({
 
   const handleClaim = async () => {
     try {
-      // Immediately update the UI state
+      // Immediately update the UI state to prevent multiple clicks
       setIsClaimed(true)
       
       // Actually perform the claim operation
