@@ -76,7 +76,7 @@ export const useClaimCredits = () => {
           if (updateError) throw new Error(`Error updating transaction: ${updateError.message}`)
         }
 
-        // Update the user's time balance directly
+        // Get the user's current time balance
         const { data: currentBalance, error: balanceError } = await supabase
           .from('time_balances')
           .select('balance')
@@ -85,8 +85,10 @@ export const useClaimCredits = () => {
 
         if (balanceError) throw new Error(`Error getting current balance: ${balanceError.message}`)
 
+        // Calculate new balance
         const newBalance = currentBalance.balance + hours
         
+        // Update the user's time balance
         const { error: updateBalanceError } = await supabase
           .from('time_balances')
           .update({ 
@@ -95,15 +97,19 @@ export const useClaimCredits = () => {
           })
           .eq('user_id', user.id)
 
-        if (updateBalanceError) throw new Error(`Error updating balance: ${updateBalanceError.message}`)
+        if (updateBalanceError) {
+          console.error("Error updating time balance:", updateBalanceError)
+          throw new Error(`Error updating balance: ${updateBalanceError.message}`)
+        }
 
         console.log(`Successfully updated balance from ${currentBalance.balance} to ${newBalance}`)
         
+        // Set claimed state for UI updates
         setIsClaimed(true)
-        return { success: true, creditsClaimed: hours }
+        return { success: true, creditsClaimed: hours, newBalance }
       } catch (error) {
-        console.error("Error in claimCredits:", error);
-        throw error;
+        console.error("Error in claimCredits:", error)
+        throw error
       }
     },
     onSuccess: (data) => {
@@ -125,8 +131,9 @@ export const useClaimCredits = () => {
       queryClient.invalidateQueries({ queryKey: ['user-stats'] })
       queryClient.invalidateQueries({ queryKey: ['user-offers'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['completed-offers'] })
       
-      // Also trigger a direct refetch of the time balance to ensure it's updated immediately
+      // Force an immediate refetch of the time balance
       queryClient.refetchQueries({ queryKey: ['time-balance'] })
     },
     onError: (error: Error) => {
@@ -135,6 +142,7 @@ export const useClaimCredits = () => {
         title: "Error",
         description: error.message,
       })
+      console.error("Claim credits error:", error)
     }
   })
 

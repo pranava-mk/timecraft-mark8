@@ -39,9 +39,10 @@ const QuickStats = () => {
           table: 'time_balances',
           filter: `user_id=eq.${userId}`
         },
-        () => {
-          console.log('Time balance update received')
-          queryClient.invalidateQueries({ queryKey: ['time-balance', userId] })
+        (payload) => {
+          console.log('Time balance update received in QuickStats', payload)
+          queryClient.invalidateQueries({ queryKey: ['time-balance'] })
+          queryClient.refetchQueries({ queryKey: ['time-balance'] })
         }
       )
       .subscribe()
@@ -58,10 +59,10 @@ const QuickStats = () => {
           filter: `profile_id=eq.${userId}`
         },
         () => {
-          console.log('Offers update received')
-          queryClient.invalidateQueries({ queryKey: ['user-stats', userId] })
-          queryClient.invalidateQueries({ queryKey: ['time-balance', userId] })
-          queryClient.invalidateQueries({ queryKey: ['user-offers', userId] })
+          console.log('Offers update received in QuickStats')
+          queryClient.invalidateQueries({ queryKey: ['user-stats'] })
+          queryClient.invalidateQueries({ queryKey: ['time-balance'] })
+          queryClient.invalidateQueries({ queryKey: ['user-offers'] })
         }
       )
       .subscribe()
@@ -90,37 +91,29 @@ const QuickStats = () => {
     enabled: !!userId // Only run query when userId is available
   })
 
-  // Get user's offers to calculate credits used
-  const { data: userOffers, isLoading: userOffersLoading } = useQuery({
-    queryKey: ['user-offers', userId],
+  // Directly fetch time balance from the database
+  const { data: timeBalanceData, isLoading: timeBalanceLoading } = useQuery({
+    queryKey: ['time-balance', userId],
     queryFn: async () => {
       if (!userId) return null
       
       const { data, error } = await supabase
-        .from('offers')
-        .select('time_credits')
-        .eq('profile_id', userId)
-      
-      if (error) throw error
-      return data
-    },
-    enabled: !!userId
-  })
+        .from('time_balances')
+        .select('balance')
+        .eq('user_id', userId)
+        .single()
 
-  // Calculate available time balance based on offers
-  const calculateTimeBalance = () => {
-    const INITIAL_CREDITS = 30;
-    
-    if (userOffersLoading || !userOffers) {
-      return INITIAL_CREDITS;
-    }
-    
-    // Sum up all credits used in offers
-    const usedCredits = userOffers.reduce((sum, offer) => 
-      sum + (offer.time_credits || 0), 0);
-    
-    return INITIAL_CREDITS - usedCredits;
-  }
+      if (error) {
+        console.error('Error fetching time balance:', error)
+        throw error
+      }
+      
+      console.log('Time balance data fetched:', data)
+      return data?.balance || 0
+    },
+    enabled: !!userId,
+    refetchInterval: 2000 // Refetch every 2 seconds to ensure up-to-date data
+  })
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -132,10 +125,10 @@ const QuickStats = () => {
         <CardContent>
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold text-navy">
-              {userOffersLoading ? (
+              {timeBalanceLoading ? (
                 <Skeleton className="h-8 w-20" />
               ) : (
-                `${calculateTimeBalance()} credits`
+                `${timeBalanceData} credits`
               )}
             </div>
             <Badge variant="outline" className="bg-teal/10 text-teal">Available</Badge>

@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button"
 import { Check, Gift, Hourglass } from "lucide-react"
 import { useClaimCredits } from "@/hooks/useClaimCredits"
+import { useState } from "react"
 
 interface OfferApplyButtonProps {
   offerId: string
@@ -24,10 +25,21 @@ const OfferApplyButton = ({
   isApplying,
   timeCredits = 1
 }: OfferApplyButtonProps) => {
-  const { claimCredits, isClaiming, isClaimed } = useClaimCredits()
+  const { claimCredits, isClaiming, isClaimed: initialClaimed } = useClaimCredits()
+  const [isClaimed, setIsClaimed] = useState(initialClaimed)
 
-  const handleClaim = () => {
-    claimCredits({ offerId, hours: timeCredits })
+  const handleClaim = async () => {
+    try {
+      // Optimistically update the UI immediately
+      setIsClaimed(true)
+      
+      // Actually perform the claim operation
+      await claimCredits({ offerId, hours: timeCredits })
+    } catch (error) {
+      // If there was an error, revert the optimistic update
+      setIsClaimed(false)
+      console.error("Error claiming credits:", error)
+    }
   }
   
   // Only show claim button for service providers (applicants) when the offer is completed
