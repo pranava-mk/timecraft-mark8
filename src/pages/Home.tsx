@@ -14,9 +14,15 @@ const Home = () => {
   const queryClient = useQueryClient()
   
   useEffect(() => {
-    // Trigger a refetch of the time balance when the home page loads
+    // Trigger a refetch of all important data when the home page loads
     queryClient.invalidateQueries({ queryKey: ['time-balance'] })
     queryClient.refetchQueries({ queryKey: ['time-balance'] })
+    
+    queryClient.invalidateQueries({ queryKey: ['completed-offers'] })
+    queryClient.refetchQueries({ queryKey: ['completed-offers'] })
+    
+    queryClient.invalidateQueries({ queryKey: ['user-stats'] })
+    queryClient.refetchQueries({ queryKey: ['user-stats'] })
   }, [queryClient])
   
   return (

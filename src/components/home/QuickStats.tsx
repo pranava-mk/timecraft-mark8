@@ -42,6 +42,27 @@ const QuickStats = () => {
         (payload) => {
           console.log('Time balance update received in QuickStats', payload)
           queryClient.invalidateQueries({ queryKey: ['time-balance'] })
+          // Force immediate refetch
+          queryClient.refetchQueries({ queryKey: ['time-balance'] })
+        }
+      )
+      .subscribe()
+
+    // Set up real-time listener for transactions changes
+    const transactionsChannel = supabase
+      .channel('transactions-quickstats-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions'
+        },
+        (payload) => {
+          console.log('Transaction update received in QuickStats', payload)
+          queryClient.invalidateQueries({ queryKey: ['time-balance'] })
+          queryClient.invalidateQueries({ queryKey: ['user-stats'] })
+          // Force immediate refetch
           queryClient.refetchQueries({ queryKey: ['time-balance'] })
         }
       )
@@ -69,6 +90,7 @@ const QuickStats = () => {
 
     return () => {
       supabase.removeChannel(timeBalanceChannel)
+      supabase.removeChannel(transactionsChannel)
       supabase.removeChannel(offersChannel)
     }
   }, [queryClient, userId])
@@ -112,7 +134,7 @@ const QuickStats = () => {
       return data?.balance || 0
     },
     enabled: !!userId,
-    refetchInterval: 2000 // Refetch every 2 seconds to ensure up-to-date data
+    refetchInterval: 5000 // Refetch every 5 seconds to ensure up-to-date data
   })
 
   return (

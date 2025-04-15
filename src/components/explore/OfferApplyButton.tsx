@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button"
 import { Check, Gift, Hourglass } from "lucide-react"
 import { useClaimCredits } from "@/hooks/useClaimCredits"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface OfferApplyButtonProps {
   offerId: string
@@ -25,19 +25,36 @@ const OfferApplyButton = ({
   isApplying,
   timeCredits = 1
 }: OfferApplyButtonProps) => {
+  // Use initialClaimed from the hook to set the initial state
   const { claimCredits, isClaiming, isClaimed: initialClaimed } = useClaimCredits()
   const [isClaimed, setIsClaimed] = useState(initialClaimed)
+  
+  // Update local claimed state if transaction is already claimed (from the database)
+  useEffect(() => {
+    if (initialClaimed) {
+      setIsClaimed(true)
+    }
+  }, [initialClaimed])
+
+  // Check if the userApplication includes claimed status
+  useEffect(() => {
+    if (userApplication?.claimed) {
+      setIsClaimed(true)
+    }
+  }, [userApplication])
 
   const handleClaim = async () => {
     try {
-      // Optimistically update the UI immediately
+      // Immediately update the UI state
       setIsClaimed(true)
       
       // Actually perform the claim operation
-      await claimCredits({ offerId, hours: timeCredits })
+      await claimCredits({ 
+        offerId, 
+        hours: timeCredits 
+      })
     } catch (error) {
-      // If there was an error, revert the optimistic update
-      setIsClaimed(false)
+      // Don't revert UI state even on error to avoid confusion
       console.error("Error claiming credits:", error)
     }
   }

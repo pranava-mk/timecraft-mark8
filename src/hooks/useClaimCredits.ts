@@ -1,5 +1,5 @@
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/components/ui/use-toast'
@@ -8,6 +8,39 @@ export const useClaimCredits = () => {
   const [isClaimed, setIsClaimed] = useState(false)
   const queryClient = useQueryClient()
   const { toast } = useToast()
+
+  // When the hook is initialized, check if the user has already claimed credits
+  // This will be used only by the claim buttons, so we don't need the offerId here
+  useEffect(() => {
+    // This function will be called when a new offer is displayed or when we need to check claim status
+    const checkClaimedStatus = async (offerId?: string) => {
+      if (!offerId) return
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('claimed')
+          .eq('offer_id', offerId)
+          .eq('provider_id', user.id)
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error checking claimed status:', error)
+          return
+        }
+
+        setIsClaimed(data?.claimed || false)
+      } catch (err) {
+        console.error('Error in checkClaimedStatus:', err)
+      }
+    }
+
+    // We don't call checkClaimedStatus here because we don't have the offerId
+    // The component using this hook should check the claimed status from the offer data
+  }, [])
 
   const claimCredits = useMutation({
     mutationFn: async ({ offerId, hours }: { offerId: string, hours: number }) => {
@@ -23,7 +56,7 @@ export const useClaimCredits = () => {
         .from('transactions')
         .select('claimed, provider_id')
         .eq('offer_id', offerId)
-        .single()
+        .maybeSingle()
 
       if (txError && txError.code !== 'PGRST116') { // PGRST116 is "No rows returned" which is fine
         throw new Error(`Error checking transaction: ${txError.message}`)
@@ -125,6 +158,9 @@ export const useClaimCredits = () => {
         })
       }
       
+      // Immediately update local claimed state
+      setIsClaimed(true)
+      
       // Invalidate ALL relevant queries to ensure UI updates correctly
       queryClient.invalidateQueries({ queryKey: ['time-balance'] })
       queryClient.invalidateQueries({ queryKey: ['pending-offers-and-applications'] })
@@ -133,8 +169,9 @@ export const useClaimCredits = () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['completed-offers'] })
       
-      // Force an immediate refetch of the time balance
+      // Force immediate refetches
       queryClient.refetchQueries({ queryKey: ['time-balance'] })
+      queryClient.refetchQueries({ queryKey: ['completed-offers'] })
     },
     onError: (error: Error) => {
       toast({

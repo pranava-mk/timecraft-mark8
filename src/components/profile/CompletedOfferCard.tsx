@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Gift } from "lucide-react"
 import { useClaimCredits } from "@/hooks/useClaimCredits"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface CompletedOffer {
   id: string
@@ -28,10 +28,17 @@ interface CompletedOfferCardProps {
 export const CompletedOfferCard = ({ offer, isForYou, onClaimed }: CompletedOfferCardProps) => {
   const { claimCredits, isClaiming } = useClaimCredits()
   const [isClaimed, setIsClaimed] = useState(offer.claimed || false)
+  
+  // Update local state when offer.claimed changes
+  useEffect(() => {
+    if (offer.claimed) {
+      setIsClaimed(true)
+    }
+  }, [offer.claimed])
 
   const handleClaim = async () => {
     try {
-      // Update local state immediately for responsive UI
+      // First update local state to show button as disabled immediately
       setIsClaimed(true)
       
       // Notify parent component
@@ -45,8 +52,9 @@ export const CompletedOfferCard = ({ offer, isForYou, onClaimed }: CompletedOffe
         hours: offer.time_credits || offer.hours 
       })
     } catch (error) {
-      // If there's an error, we don't revert the UI state to avoid confusion
       console.error("Error claiming credits:", error)
+      // Even if there's an error, we don't revert the UI state to avoid confusion
+      // The backend state still controls the ultimate display
     }
   }
 

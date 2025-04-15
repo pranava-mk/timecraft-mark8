@@ -133,7 +133,8 @@ export function useCompletedOffers(userId: string | null) {
       
       return validOffers
     },
-    enabled: !!userId
+    enabled: !!userId,
+    refetchInterval: 10000 // Refetch every 10 seconds to ensure updated data
   })
 
   // Function to mark an offer as claimed locally (optimistic UI update)
