@@ -88,20 +88,23 @@ export const CompletedOfferCard = ({ offer, isForYou, onClaimed }: CompletedOffe
             )}
           </div>
           
-          {!isForYou && (
+          {!isForYou && !isClaimed && (
             <Button 
               onClick={handleClaim}
-              disabled={isClaiming || isClaimed}
-              className={`${
-                isClaimed 
-                  ? 'bg-gray-400 hover:bg-gray-400 text-white' 
-                  : 'bg-green-500 hover:bg-green-600 text-white'
-              }`}
+              disabled={isClaiming}
+              className="bg-green-500 hover:bg-green-600 text-white"
               size="sm"
             >
               <Gift className="h-4 w-4 mr-1" />
-              {isClaimed ? 'Credits Claimed' : 'Claim Credits'}
+              Claim Credits
             </Button>
+          )}
+          
+          {!isForYou && isClaimed && (
+            <Badge variant="outline" className="bg-gray-100 text-gray-600 py-1 px-3">
+              <Gift className="h-4 w-4 mr-1 inline" />
+              Credits Claimed
+            </Badge>
           )}
         </div>
       </CardContent>

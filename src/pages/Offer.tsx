@@ -112,9 +112,20 @@ const Offer = () => {
     navigate('/profile')
   }
 
+  // Function to handle duration input - only allow integers
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Only allow digits
+    const value = e.target.value.replace(/\D/g, '')
+    setDuration(value)
+  }
+
   const hasNoCredits = (timeBalance || 0) <= 0
 
   const maxCredits = Math.min(5, timeBalance || 0)
+  
+  // Get today's date for calendar disable past dates
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
@@ -203,7 +214,9 @@ const Offer = () => {
                     mode="single"
                     selected={date}
                     onSelect={setDate}
+                    disabled={(date) => date < today}
                     initialFocus
+                    className={cn("p-3 pointer-events-auto")}
                   />
                 </PopoverContent>
               </Popover>
@@ -213,12 +226,12 @@ const Offer = () => {
               <div className="space-y-2 flex-1">
                 <label className="text-sm font-medium">Duration (hours)</label>
                 <Input 
-                  type="number"
-                  min="0.5"
-                  step="0.5"
+                  type="text"
+                  pattern="[0-9]*"
+                  min="1"
                   value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                  placeholder="e.g., 1.5"
+                  onChange={handleDurationChange}
+                  placeholder="e.g., 3"
                   required
                 />
               </div>

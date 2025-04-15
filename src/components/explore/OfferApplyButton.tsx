@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Check, Gift, Hourglass } from "lucide-react"
 import { useClaimCredits } from "@/hooks/useClaimCredits"
 import { useState, useEffect } from "react"
+import { Badge } from "@/components/ui/badge"
 
 interface OfferApplyButtonProps {
   offerId: string
@@ -61,18 +62,23 @@ const OfferApplyButton = ({
   
   // Only show claim button for service providers (applicants) when the offer is completed
   if (isApplied && status === 'completed' && (applicationStatus === 'accepted' || userApplication?.status === 'accepted')) {
+    if (isClaimed) {
+      return (
+        <Badge variant="outline" className="bg-gray-100 text-gray-600 py-1 px-3 mt-4 md:mt-0">
+          <Gift className="h-4 w-4 mr-1 inline" />
+          Credits Claimed
+        </Badge>
+      )
+    }
+    
     return (
       <Button 
         onClick={handleClaim}
-        disabled={isClaiming || isClaimed}
-        className={`w-full md:w-auto mt-4 md:mt-0 ${
-          isClaimed 
-            ? 'bg-gray-400 hover:bg-gray-400' 
-            : 'bg-green-500 hover:bg-green-600'
-        } text-white`}
+        disabled={isClaiming}
+        className="w-full md:w-auto mt-4 md:mt-0 bg-green-500 hover:bg-green-600 text-white"
       >
         <Gift className="h-4 w-4 mr-1" />
-        {isClaimed ? 'Credits Claimed' : 'Claim Credits'}
+        Claim Credits
       </Button>
     )
   }
