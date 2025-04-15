@@ -1,5 +1,5 @@
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -253,10 +253,10 @@ const Offer = () => {
                         <span className="text-xs text-muted-foreground">{maxCredits > 0 ? maxCredits : 1} Credits</span>
                       </div>
                       <div className="mt-2 text-center text-sm text-muted-foreground">
-                        {timeCredits[0] > calculateTimeBalance() ? (
+                        {timeCredits[0] > (timeBalance || 0) ? (
                           <span className="text-destructive">Insufficient credits!</span>
                         ) : (
-                          <span>You have {calculateTimeBalance()} credits available</span>
+                          <span>You have {timeBalance || 0} credits available</span>
                         )}
                       </div>
                     </div>
