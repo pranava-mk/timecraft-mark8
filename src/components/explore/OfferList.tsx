@@ -44,27 +44,9 @@ const OfferList = ({ sortByRelevance = false }: OfferListProps) => {
         }
       )
       .subscribe()
-      
-    const transactionChannel = supabase
-      .channel('transaction-list-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'transactions'
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['offers'] })
-          queryClient.invalidateQueries({ queryKey: ['completed-offers'] })
-          queryClient.invalidateQueries({ queryKey: ['pending-offers-and-applications'] })
-        }
-      )
-      .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
-      supabase.removeChannel(transactionChannel)
     }
   }, [queryClient])
 
@@ -80,15 +62,15 @@ const OfferList = ({ sortByRelevance = false }: OfferListProps) => {
     )
   }
 
-  // Filter out offers created by the current user and completed offers
+  // Filter out offers created by the current user
   const filteredOffers = offers.filter(offer => 
-    offer.user.id !== userProfile?.id && offer.status !== 'completed'
+    offer.user.id !== userProfile?.id
   )
 
   if (filteredOffers.length === 0) {
     return (
       <div className="text-center text-muted-foreground">
-        No available offers found from other users
+        No offers found from other users
       </div>
     )
   }

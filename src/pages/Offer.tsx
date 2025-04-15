@@ -45,12 +45,9 @@ const Offer = () => {
   const [serviceType, setServiceType] = useState("")
   const [otherServiceType, setOtherServiceType] = useState("")
   const [date, setDate] = useState<Date>()
-  const [duration, setDuration] = useState("1")
+  const [duration, setDuration] = useState("")
   const [timeCredits, setTimeCredits] = useState([1])
   const { toast } = useToast()
-  
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
 
   const { data: userOffers, isLoading: userOffersLoading } = useQuery({
     queryKey: ['user-offers'],
@@ -110,13 +107,6 @@ const Offer = () => {
     })
 
     navigate('/profile')
-  }
-
-  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    if (value === "" || /^[1-9]\d*$/.test(value)) {
-      setDuration(value)
-    }
   }
 
   const hasNoCredits = calculateTimeBalance() <= 0
@@ -210,10 +200,7 @@ const Offer = () => {
                     mode="single"
                     selected={date}
                     onSelect={setDate}
-                    disabled={(date) => date < today}
                     initialFocus
-                    fromDate={today}
-                    className="rounded-md border shadow-md"
                   />
                 </PopoverContent>
               </Popover>
@@ -224,16 +211,13 @@ const Offer = () => {
                 <label className="text-sm font-medium">Duration (hours)</label>
                 <Input 
                   type="number"
-                  min="1"
-                  step="1"
+                  min="0.5"
+                  step="0.5"
                   value={duration}
-                  onChange={handleDurationChange}
-                  placeholder="e.g., 1, 2, 3"
+                  onChange={(e) => setDuration(e.target.value)}
+                  placeholder="e.g., 1.5"
                   required
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Only whole numbers allowed (1, 2, 3, etc.)
-                </p>
               </div>
               
               <div className="space-y-2 flex-1">

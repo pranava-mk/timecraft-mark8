@@ -23,12 +23,7 @@ const OfferOwnerActions = ({
 }: OfferOwnerActionsProps) => {
   // If the offer is already completed, don't show any action buttons
   if (status === 'completed') {
-    return (
-      <div className="flex items-center text-green-700 font-medium">
-        <CheckCircle2 className="h-4 w-4 mr-2" />
-        Completed
-      </div>
-    )
+    return null
   }
   
   // If an offer has an accepted application, show the Mark as Done button

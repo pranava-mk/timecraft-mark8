@@ -7,9 +7,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { supabase } from "./integrations/supabase/client"
 import MainNav from "./components/MainNav"
-import Home from "./pages/Home" // Direct import for Home
 
-// Lazy load other route components
+// Lazy load route components
+const Home = React.lazy(() => import("./pages/Home"))
 const Explore = React.lazy(() => import("./pages/Explore"))
 const Login = React.lazy(() => import("./pages/Login"))
 const Offer = React.lazy(() => import("./pages/Offer"))

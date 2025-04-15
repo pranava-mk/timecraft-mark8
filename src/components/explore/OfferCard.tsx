@@ -78,7 +78,7 @@ const OfferCard = ({ offer, showApplications = false }: OfferCardProps) => {
       await completeOffer(offer.id)
       toast({
         title: "Success",
-        description: "Offer marked as completed. The service provider will need to claim their credits.",
+        description: "Offer marked as completed and credits transferred",
       })
     } catch (error: any) {
       toast({
@@ -106,11 +106,6 @@ const OfferCard = ({ offer, showApplications = false }: OfferCardProps) => {
 
   // Check if this offer has any accepted applications
   const hasAcceptedApplication = applications?.some(app => app.status === 'accepted')
-
-  // If the offer is completed and not owned by current user, don't show the card
-  if (offer.status === 'completed' && !isOwner && !showApplications) {
-    return null
-  }
 
   return (
     <Card className="gradient-border card-hover">
