@@ -2,16 +2,8 @@
 import { useState, useEffect } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { Skeleton } from "@/components/ui/skeleton"
-import { CompletedOfferCard } from "./CompletedOfferCard"
 
-interface CompletedOffersProps {
-  userId: string | null
-  username?: string
-  avatar?: string
-}
-
-interface CompletedOffer {
+export interface CompletedOffer {
   id: string
   title: string
   description: string
@@ -20,10 +12,10 @@ interface CompletedOffer {
   hours: number
   created_at: string
   provider_username?: string
-  claimed?: boolean // Track claiming status
+  claimed?: boolean
 }
 
-const CompletedOffers = ({ userId }: CompletedOffersProps) => {
+export function useCompletedOffers(userId: string | null) {
   const queryClient = useQueryClient()
   const [localClaimed, setLocalClaimed] = useState<Record<string, boolean>>({})
   
@@ -149,38 +141,10 @@ const CompletedOffers = ({ userId }: CompletedOffersProps) => {
     setLocalClaimed(prev => ({ ...prev, [offerId]: true }))
   }
 
-  if (forYouLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-36 w-full" />
-        <Skeleton className="h-36 w-full" />
-      </div>
-    )
+  return {
+    completedForYou,
+    forYouLoading,
+    localClaimed,
+    setOfferAsClaimed
   }
-
-  if (!completedForYou?.length) {
-    return (
-      <p className="text-center text-muted-foreground py-8">
-        No completed services found
-      </p>
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      {completedForYou.map((offer) => (
-        <CompletedOfferCard
-          key={offer.id}
-          offer={{
-            ...offer,
-            claimed: localClaimed[offer.id] || offer.claimed
-          }}
-          isForYou={true}
-          onClaimed={() => setOfferAsClaimed(offer.id)}
-        />
-      ))}
-    </div>
-  )
 }
-
-export default CompletedOffers

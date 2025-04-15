@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -11,7 +10,7 @@ import OfferCard from "@/components/explore/OfferCard"
 import { useEffect, useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import CompletedOffers from "@/components/profile/CompletedOffers"
+import CompletedOffers from "@/components/profile/completed-offers"
 
 const Profile = () => {
   const navigate = useNavigate()
