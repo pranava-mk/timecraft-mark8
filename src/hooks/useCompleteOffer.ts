@@ -101,11 +101,12 @@ export const useCompleteOffer = () => {
       queryClient.invalidateQueries({ queryKey: ['pending-offers-and-applications'] })
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to complete offer: " + error.message,
-        variant: "destructive",
-      })
+      // Don't show error toast, but log the error to console for debugging
+      console.error("Failed to complete offer:", error.message)
+      
+      // Still invalidate queries to ensure UI is up-to-date
+      queryClient.invalidateQueries({ queryKey: ['user-offers'] })
+      queryClient.invalidateQueries({ queryKey: ['offers'] })
     }
   })
 
