@@ -57,6 +57,32 @@ const App = () => {
           .insert([{ id: userId }])
         
         if (insertError) throw insertError
+        
+        // Also ensure the user has a time balance
+        const { data: timeBalanceData, error: timeBalanceError } = await supabase
+          .from('time_balances')
+          .select('balance')
+          .eq('user_id', userId)
+          .maybeSingle()
+          
+        if (timeBalanceError) {
+          console.error('Error checking time balance:', timeBalanceError)
+        } else if (!timeBalanceData) {
+          // If no time balance exists, create one with 30 credits
+          const { error: insertBalanceError } = await supabase
+            .from('time_balances')
+            .insert([{ 
+              user_id: userId, 
+              balance: 30,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }])
+            
+          if (insertBalanceError) {
+            console.error('Error creating time balance:', insertBalanceError)
+          }
+        }
+        
         setIsNewUser(true)
       } else {
         setIsNewUser(!data.username)

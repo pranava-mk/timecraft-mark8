@@ -60,6 +60,8 @@ export const useCreateOffer = () => {
         duration: offer.duration
       })
 
+      // FIX: No need to manually update the time balance as this is handled by a database trigger
+      // Just insert the offer, and the trigger will handle the credit deduction
       const { error, data } = await supabase
         .from('offers')
         .insert([{ 

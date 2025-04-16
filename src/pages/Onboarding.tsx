@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
@@ -38,6 +37,46 @@ const Onboarding = ({ setIsNewUser }: OnboardingProps) => {
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+
+  // Check if the user has a time balance when this component loads
+  useEffect(() => {
+    const checkTimeBalance = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      // Check if the user has a time balance record
+      const { data, error } = await supabase
+        .from('time_balances')
+        .select('balance')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      
+      if (error) {
+        console.error('Error checking time balance:', error)
+        return
+      }
+      
+      // If no time balance record exists, create one with 30 credits
+      if (!data) {
+        const { error: insertError } = await supabase
+          .from('time_balances')
+          .insert([{ 
+            user_id: user.id, 
+            balance: 30,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }])
+        
+        if (insertError) {
+          console.error('Error creating time balance:', insertError)
+        } else {
+          console.log('Created initial time balance of 30 credits')
+        }
+      }
+    }
+    
+    checkTimeBalance()
+  }, [])
 
   useEffect(() => {
     if (selectedServices.length < MIN_SERVICES) {
@@ -87,6 +126,9 @@ const Onboarding = ({ setIsNewUser }: OnboardingProps) => {
 
       // Invalidate the profile query to ensure fresh data
       await queryClient.invalidateQueries({ queryKey: ['profile'] })
+      // Also invalidate time balance to ensure it's refreshed
+      await queryClient.invalidateQueries({ queryKey: ['time-balance'] })
+      await queryClient.refetchQueries({ queryKey: ['time-balance'] })
 
       toast({
         title: "Profile updated",
