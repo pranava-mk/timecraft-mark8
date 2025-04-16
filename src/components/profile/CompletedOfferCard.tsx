@@ -91,7 +91,7 @@ export const CompletedOfferCard = ({ offer, isForYou, onClaimed }: CompletedOffe
           {!isForYou && !isClaimed && (
             <Button 
               onClick={handleClaim}
-              disabled={isClaiming}
+              disabled={isClaiming || isClaimed}
               className="bg-green-500 hover:bg-green-600 text-white"
               size="sm"
             >

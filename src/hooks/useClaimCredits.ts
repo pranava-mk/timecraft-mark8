@@ -79,18 +79,20 @@ export const useClaimCredits = () => {
           // Get the offer details to get the request owner
           const { data: offerData, error: offerError } = await supabase
             .from('offers')
-            .select('profile_id, service_type')
+            .select('profile_id, service_type, time_credits')
             .eq('id', offerId)
             .single()
             
           if (offerError) throw new Error(`Error getting offer details: ${offerError.message}`)
           
-          // Create the transaction
+          // Create the transaction - use time_credits from the offer if available
+          const creditsToAdd = offerData.time_credits || hours
+          
           const { error: createError } = await supabase
             .from('transactions')
             .insert({
               service: offerData.service_type || 'service',
-              hours: hours,
+              hours: creditsToAdd,
               user_id: offerData.profile_id,
               provider_id: user.id,
               offer_id: offerId,
@@ -118,8 +120,15 @@ export const useClaimCredits = () => {
 
         if (balanceError) throw new Error(`Error getting current balance: ${balanceError.message}`)
 
-        // Calculate new balance
-        const newBalance = currentBalance.balance + hours
+        // Calculate new balance - use either the stored hours or the passed hours parameter
+        const { data: offerData } = await supabase
+          .from('offers')
+          .select('time_credits')
+          .eq('id', offerId)
+          .single()
+          
+        const creditsToAdd = offerData?.time_credits || hours
+        const newBalance = currentBalance.balance + creditsToAdd
         
         // Update the user's time balance
         const { error: updateBalanceError } = await supabase
@@ -139,7 +148,7 @@ export const useClaimCredits = () => {
         
         // Set claimed state for UI updates
         setIsClaimed(true)
-        return { success: true, creditsClaimed: hours, newBalance }
+        return { success: true, creditsClaimed: creditsToAdd, newBalance }
       } catch (error) {
         console.error("Error in claimCredits:", error)
         throw error

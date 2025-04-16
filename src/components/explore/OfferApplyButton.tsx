@@ -74,7 +74,7 @@ const OfferApplyButton = ({
     return (
       <Button 
         onClick={handleClaim}
-        disabled={isClaiming}
+        disabled={isClaiming || isClaimed}
         className="w-full md:w-auto mt-4 md:mt-0 bg-green-500 hover:bg-green-600 text-white"
       >
         <Gift className="h-4 w-4 mr-1" />
